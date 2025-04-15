@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -45,6 +44,46 @@ else:
     st.subheader(f"📈 Ordu İli Genel Nüfus Değişimi ({start_year} - {end_year})")
     ordu_geneli = df_filtered.groupby("YIL")["YILLIK_NÜFUS"].sum().reset_index()
     st.plotly_chart(px.line(ordu_geneli, x="YIL", y="YILLIK_NÜFUS", markers=True), key="chart_ordu")
+
+    # İlçe Bazlı Çoklu Seçim ve Grafik
+    st.subheader("📊 İlçe Bazında Nüfus Değişimi Analizi")
+
+    if "show_clear_ilce" not in st.session_state:
+        st.session_state.show_clear_ilce = True  # Başta tüm ilçeler seçili olduğundan true
+    if "secili_ilceler" not in st.session_state:
+        st.session_state.secili_ilceler = sorted(df_filtered["İLÇE"].unique().tolist())
+
+    tum_ilceler = sorted(df_filtered["İLÇE"].unique())
+
+    ilce_col1, ilce_col2 = st.columns([1, 1])
+    if ilce_col1.button("✅ Tüm İlçeleri Seç"):
+        st.session_state.secili_ilceler = tum_ilceler
+        st.session_state.show_clear_ilce = True
+    if st.session_state.show_clear_ilce:
+        if ilce_col2.button("❌ Hiçbirini Seçme"):
+            st.session_state.secili_ilceler = []
+            st.session_state.show_clear_ilce = False
+
+    secili_ilceler = st.multiselect("İlçeleri Seç", tum_ilceler, key="secili_ilceler")
+    st.info(f"🔹 Seçili ilçe sayısı: {len(secili_ilceler)}")
+
+    ilceler_df = df_filtered[df_filtered["İLÇE"].isin(secili_ilceler)]
+    if not ilceler_df.empty:
+        st.plotly_chart(px.line(ilceler_df.groupby(["YIL", "İLÇE"]).sum().reset_index(),
+                                x="YIL", y="YILLIK_NÜFUS", color="İLÇE", markers=True), key="chart_selected_ilceler")
+
+        output_ilce = BytesIO()
+        ilceler_df.to_excel(output_ilce, index=False)
+        st.download_button("📥 Seçili İlçe Verilerini Excel Olarak İndir", data=output_ilce.getvalue(),
+                           file_name="ilce_bazli_nufus_analizi.xlsx")
+
+        pivot_ilce_df = ilceler_df.pivot_table(index="İLÇE", columns="YIL", values="YILLIK_NÜFUS", aggfunc="sum")
+        pivot_ilce_df.loc["TOPLAM"] = pivot_ilce_df.sum(numeric_only=True)
+        pivot_ilce_df.reset_index(inplace=True)
+
+        pivot_ilce_out = BytesIO()
+        pivot_ilce_df.to_excel(pivot_ilce_out, index=False)
+        st.download_button("📊 Seçili İlçeleri Pivot Tablo Olarak İndir", data=pivot_ilce_out.getvalue(), file_name="ilce_nufus_pivot.xlsx")
 
     secili_ilce = st.selectbox("🔽 İlçe seçin", df_filtered["İLÇE"].unique().tolist())
     ilce_df = df_filtered[df_filtered["İLÇE"] == secili_ilce]
