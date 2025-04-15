@@ -14,22 +14,23 @@ def get_base64_image(image_path):
 logo_base64 = get_base64_image("logo.png")
 
 st.markdown(f"""
-    <div style="text-align: center; background-color: #0d4c91; padding: 10px 10px; border-radius: 10px;">
-        <img src="data:image/png;base64,{logo_base64}" width="70" style="margin-bottom: 5px;">
-        <h2 style="color: white; margin-bottom: 0;">Ordu Büyükşehir Belediyesi</h2>
-        <h4 style="color: #d0d0d0; margin: 5px 0;">Bilgi İşlem Dairesi Başkanlığı</h4>
-        <h5 style="color: #ccc; font-weight: normal; margin: 0;">Coğrafi Bilgi Sistemleri ve Akıllı Şehirler Şube Müdürlüğü</h5>
+<div style="display: flex; align-items: center; justify-content: center; gap: 25px; padding: 15px 0;">
+    <img src="data:image/png;base64,{logo_base64}" width="140">
+    <div style="text-align: left;">
+        <h2 style="margin: 0; color: white;">NÜFUS ANALİZ PORTALİ</h2>
     </div>
-    <hr style="margin-top: 15px; border-color: #444;">
+</div>
+<hr>
 """, unsafe_allow_html=True)
+
 
 df = pd.read_excel("nufus_verisi.xlsx", sheet_name="Sayfa1")
 year_cols = [col for col in df.columns if col.strip().startswith("20") and "YILI NÜFUSU" in col]
 df_long = pd.melt(df, id_vars=["İLÇE", "MAHALLE"], value_vars=year_cols,
-                  var_name="YIL", value_name="YILLIK_NÜFUS")
+                  var_name="YIL", value_name="NÜFUS (KİŞİ SAYISI)")
 
 df_long["YIL"] = df_long["YIL"].str.extract(r"(20\d{2})")
-df_long["YILLIK_NÜFUS"] = pd.to_numeric(df_long["YILLIK_NÜFUS"], errors="coerce")
+df_long["NÜFUS (KİŞİ SAYISI)"] = pd.to_numeric(df_long["NÜFUS (KİŞİ SAYISI)"], errors="coerce")
 years = sorted(df_long["YIL"].dropna().unique().tolist())
 
 col1, col2 = st.columns(2)
@@ -42,14 +43,14 @@ else:
     df_filtered = df_long[(df_long["YIL"] >= start_year) & (df_long["YIL"] <= end_year)]
 
     st.subheader(f"📈 Ordu İli Genel Nüfus Değişimi ({start_year} - {end_year})")
-    ordu_geneli = df_filtered.groupby("YIL")["YILLIK_NÜFUS"].sum().reset_index()
-    st.plotly_chart(px.line(ordu_geneli, x="YIL", y="YILLIK_NÜFUS", markers=True), key="chart_ordu")
+    ordu_geneli = df_filtered.groupby("YIL")["NÜFUS (KİŞİ SAYISI)"].sum().reset_index()
+    st.plotly_chart(px.line(ordu_geneli, x="YIL", y="NÜFUS (KİŞİ SAYISI)", markers=True), key="chart_ordu")
 
     # İlçe Bazlı Çoklu Seçim ve Grafik
     st.subheader("📊 İlçe Bazında Nüfus Değişimi Analizi")
 
     if "show_clear_ilce" not in st.session_state:
-        st.session_state.show_clear_ilce = True  # Başta tüm ilçeler seçili olduğundan true
+        st.session_state.show_clear_ilce = True
     if "secili_ilceler" not in st.session_state:
         st.session_state.secili_ilceler = sorted(df_filtered["İLÇE"].unique().tolist())
 
@@ -70,30 +71,30 @@ else:
     ilceler_df = df_filtered[df_filtered["İLÇE"].isin(secili_ilceler)]
     if not ilceler_df.empty:
         st.plotly_chart(px.line(ilceler_df.groupby(["YIL", "İLÇE"]).sum().reset_index(),
-                                x="YIL", y="YILLIK_NÜFUS", color="İLÇE", markers=True), key="chart_selected_ilceler")
+                                x="YIL", y="NÜFUS (KİŞİ SAYISI)", color="İLÇE", markers=True), key="chart_selected_ilceler")
 
         output_ilce = BytesIO()
         ilceler_df.to_excel(output_ilce, index=False)
-        st.download_button("📥 Seçili İlçe Verilerini Excel Olarak İndir", data=output_ilce.getvalue(),
+        st.download_button("📥 Excel Dosyası Ham Veri İndir", data=output_ilce.getvalue(),
                            file_name="ilce_bazli_nufus_analizi.xlsx")
 
-        pivot_ilce_df = ilceler_df.pivot_table(index="İLÇE", columns="YIL", values="YILLIK_NÜFUS", aggfunc="sum")
+        pivot_ilce_df = ilceler_df.pivot_table(index="İLÇE", columns="YIL", values="NÜFUS (KİŞİ SAYISI)", aggfunc="sum")
         pivot_ilce_df.loc["TOPLAM"] = pivot_ilce_df.sum(numeric_only=True)
         pivot_ilce_df.reset_index(inplace=True)
 
         pivot_ilce_out = BytesIO()
         pivot_ilce_df.to_excel(pivot_ilce_out, index=False)
-        st.download_button("📊 Seçili İlçeleri Pivot Tablo Olarak İndir", data=pivot_ilce_out.getvalue(), file_name="ilce_nufus_pivot.xlsx")
+        st.download_button("📊 Pivot Tablo İndir", data=pivot_ilce_out.getvalue(), file_name="ilce_nufus_pivot.xlsx")
 
     secili_ilce = st.selectbox("🔽 İlçe seçin", df_filtered["İLÇE"].unique().tolist())
     ilce_df = df_filtered[df_filtered["İLÇE"] == secili_ilce]
-    ilce_agg = ilce_df.groupby("YIL")["YILLIK_NÜFUS"].sum().reset_index()
+    ilce_agg = ilce_df.groupby("YIL")["NÜFUS (KİŞİ SAYISI)"].sum().reset_index()
 
     st.subheader(f"🏙️ {secili_ilce} İlçesi Nüfus Değişimi ({start_year} - {end_year})")
-    st.plotly_chart(px.line(ilce_agg, x="YIL", y="YILLIK_NÜFUS", markers=True), key="chart_ilce")
+    st.plotly_chart(px.line(ilce_agg, x="YIL", y="NÜFUS (KİŞİ SAYISI)", markers=True), key="chart_ilce")
 
     st.subheader(f"🏘️ {secili_ilce} İlçesi Mahallelerinin Yıllık Nüfus Grafiği")
-    st.plotly_chart(px.line(ilce_df, x="YIL", y="YILLIK_NÜFUS", color="MAHALLE", markers=True), key="chart_ilce_all_mahalle")
+    st.plotly_chart(px.line(ilce_df, x="YIL", y="NÜFUS (KİŞİ SAYISI)", color="MAHALLE", markers=True), key="chart_ilce_all_mahalle")
 
     if "show_clear" not in st.session_state:
         st.session_state.show_clear = False
@@ -124,16 +125,17 @@ else:
 
     if not mahalleler_df.empty:
         st.subheader("📊 Seçilen Mahallelerin Yıllık Nüfus Grafiği")
-        st.plotly_chart(px.line(mahalleler_df, x="YIL", y="YILLIK_NÜFUS", color="MAHALLE", markers=True), key="chart_selected_mahalle")
+        st.plotly_chart(px.line(mahalleler_df, x="YIL", y="NÜFUS (KİŞİ SAYISI)", color="MAHALLE", markers=True), key="chart_selected_mahalle")
 
         output = BytesIO()
         mahalleler_df.to_excel(output, index=False)
-        st.download_button("📥 Seçili Mahalle Verilerini Excel Olarak İndir", data=output.getvalue(), file_name=f"{secili_ilce}_mahalle_verileri.xlsx")
+        st.download_button("📥 Excel Dosyası Ham Veri İndir", data=output.getvalue(), file_name=f"{secili_ilce}_mahalle_verileri.xlsx")
 
-        pivot_df = mahalleler_df.pivot_table(index="MAHALLE", columns="YIL", values="YILLIK_NÜFUS", aggfunc="sum")
+        pivot_df = mahalleler_df.pivot_table(index="MAHALLE", columns="YIL", values="NÜFUS (KİŞİ SAYISI)", aggfunc="sum")
         pivot_df.loc["TOPLAM"] = pivot_df.sum(numeric_only=True)
         pivot_df.reset_index(inplace=True)
 
         pivot_out = BytesIO()
         pivot_df.to_excel(pivot_out, index=False)
-        st.download_button("📊 Seçili Mahalleleri Pivot Tablo Olarak İndir", data=pivot_out.getvalue(), file_name=f"{secili_ilce}_mahalle_nufus_pivot.xlsx")
+        st.download_button("📊 Pivot Tablo İndir", data=pivot_out.getvalue(), file_name=f"{secili_ilce}_mahalle_nufus_pivot.xlsx")
+
