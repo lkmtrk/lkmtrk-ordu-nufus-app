@@ -23,6 +23,15 @@ st.markdown(f"""
 <hr>
 """, unsafe_allow_html=True)
 
+st.markdown("""
+<div style='text-align: center; font-size: 16px; color: #ccc; margin-top: -10px; margin-bottom: 10px;'>
+Bu uygulama Ordu iline ait nüfus verilerini yıl, ilçe ve mahalle bazında analiz etmenizi sağlar. 
+Aşağıdaki grafikler üzerinden verileri karşılaştırabilir ve Excel formatında indirebilirsiniz.
+</div>
+""", unsafe_allow_html=True)
+
+
+
 
 df = pd.read_excel("nufus_verisi.xlsx", sheet_name="Sayfa1")
 year_cols = [col for col in df.columns if col.strip().startswith("20") and "YILI NÜFUSU" in col]
@@ -48,6 +57,7 @@ else:
 
     # İlçe Bazlı Çoklu Seçim ve Grafik
     st.subheader("📊 İlçe Bazında Nüfus Değişimi Analizi")
+    st.markdown("🔽 Aşağıdan birden fazla ilçe seçerek toplu grafik ve Excel çıktıları alabilirsiniz.")
 
     if "show_clear_ilce" not in st.session_state:
         st.session_state.show_clear_ilce = True
@@ -65,7 +75,8 @@ else:
             st.session_state.secili_ilceler = []
             st.session_state.show_clear_ilce = False
 
-    secili_ilceler = st.multiselect("İlçeleri Seç", tum_ilceler, key="secili_ilceler")
+
+    secili_ilceler = st.multiselect(label="", options=tum_ilceler, key="secili_ilceler", label_visibility="collapsed")
     st.info(f"🔹 Seçili ilçe sayısı: {len(secili_ilceler)}")
 
     ilceler_df = df_filtered[df_filtered["İLÇE"].isin(secili_ilceler)]
@@ -86,7 +97,8 @@ else:
         pivot_ilce_df.to_excel(pivot_ilce_out, index=False)
         st.download_button("📊 Pivot Tablo İndir", data=pivot_ilce_out.getvalue(), file_name="ilce_nufus_pivot.xlsx")
 
-    secili_ilce = st.selectbox("🔽 İlçe seçin", df_filtered["İLÇE"].unique().tolist())
+    st.markdown("🔽 Nüfus değişimini görmek isediğiniz ilçeyi seçin")
+    secili_ilce = st.selectbox("🔽 İlçe Seçin", df_filtered["İLÇE"].unique().tolist(), label_visibility="collapsed")
     ilce_df = df_filtered[df_filtered["İLÇE"] == secili_ilce]
     ilce_agg = ilce_df.groupby("YIL")["NÜFUS (KİŞİ SAYISI)"].sum().reset_index()
 
@@ -95,6 +107,7 @@ else:
 
     st.subheader(f"🏘️ {secili_ilce} İlçesi Mahallelerinin Yıllık Nüfus Grafiği")
     st.plotly_chart(px.line(ilce_df, x="YIL", y="NÜFUS (KİŞİ SAYISI)", color="MAHALLE", markers=True), key="chart_ilce_all_mahalle")
+    st.markdown("🔽 Aşağıdan bir veya birden fazla mahalle seçin. Grafikler ve indirme dosyaları seçiminize göre güncellenir.")
 
     if "show_clear" not in st.session_state:
         st.session_state.show_clear = False
@@ -106,18 +119,20 @@ else:
     col_left, col_right = st.columns([1, 1])
     if col_left.button("✅ Tümünü Seç", key="btn_mahalle_select_all"):
         st.session_state.secili_mahalleler = tum_mahalleler
-        st.session_state.show_clear = True
-    if st.session_state.show_clear:
+
+    # Eğer en az 1 mahalle seçilmişse, buton görünsün
+    if len(st.session_state.secili_mahalleler) > 0:
         if col_right.button("❌ Hiçbirini Seçme", key="btn_mahalle_clear"):
             st.session_state.secili_mahalleler = []
-            st.session_state.show_clear = False
 
     secili_mahalleler = st.multiselect(
-        "Mahalle Seç",
+        "Mahalle Seçin",
         tum_mahalleler,
         default=None,
-        key="secili_mahalleler"
+        key="secili_mahalleler",
+        label_visibility="collapsed"
     )
+
 
     st.info(f"🟢 Seçili mahalle sayısı: {len(secili_mahalleler)}")
 
@@ -138,4 +153,6 @@ else:
         pivot_out = BytesIO()
         pivot_df.to_excel(pivot_out, index=False)
         st.download_button("📊 Pivot Tablo İndir", data=pivot_out.getvalue(), file_name=f"{secili_ilce}_mahalle_nufus_pivot.xlsx")
+
+
 
