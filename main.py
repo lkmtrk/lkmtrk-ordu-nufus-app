@@ -77,7 +77,14 @@ else:
             st.session_state.secili_ilceler = []
 
 
-    secili_ilceler = st.multiselect("İlçeleri Seç", tum_ilceler, key="secili_ilceler", label_visibility="collapsed")
+    secili_ilceler = st.multiselect(
+        label=" ",
+        options=tum_ilceler,
+        key="secili_ilceler",
+        placeholder="Bir veya Birden Fazla İlçe Seçiniz...",
+        label_visibility="collapsed"
+    )
+
     st.info(f"🔹 Seçili ilçe sayısı: {len(secili_ilceler)}")
 
     ilceler_df = df_filtered[df_filtered["İLÇE"].isin(secili_ilceler)]
@@ -127,11 +134,12 @@ else:
             st.session_state.secili_mahalleler = []
 
     secili_mahalleler = st.multiselect(
-        "Mahalle Seçin",
-        tum_mahalleler,
+        label=" ",
+        options=tum_mahalleler,
         default=None,
         key="secili_mahalleler",
-        label_visibility="collapsed"
+        placeholder="Bir veya Birden Fazla Mahalle Seçiniz...",
+        label_visibility="collapsed"  # Etiketi görünmez yapar
     )
 
 
