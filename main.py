@@ -67,16 +67,17 @@ else:
     tum_ilceler = sorted(df_filtered["İLÇE"].unique())
 
     ilce_col1, ilce_col2 = st.columns([1, 1])
+
     if ilce_col1.button("✅ Tümünü Seç", key="btn_ilce_select_all"):
         st.session_state.secili_ilceler = tum_ilceler
-        st.session_state.show_clear_ilce = True
-    if st.session_state.show_clear_ilce:
-        if ilce_col2.button("❌ Hiçbirini Seçme", key="btn_ilce_clear"):
+
+    # Eğer en az bir ilçe seçiliyse buton gösterilsin
+    if st.session_state.secili_ilceler:
+        if ilce_col2.button("❌ Seçimi Kaldır", key="btn_ilce_clear"):
             st.session_state.secili_ilceler = []
-            st.session_state.show_clear_ilce = False
 
 
-    secili_ilceler = st.multiselect(label="", options=tum_ilceler, key="secili_ilceler", label_visibility="collapsed")
+    secili_ilceler = st.multiselect("İlçeleri Seç", tum_ilceler, key="secili_ilceler", label_visibility="collapsed")
     st.info(f"🔹 Seçili ilçe sayısı: {len(secili_ilceler)}")
 
     ilceler_df = df_filtered[df_filtered["İLÇE"].isin(secili_ilceler)]
@@ -122,7 +123,7 @@ else:
 
     # Eğer en az 1 mahalle seçilmişse, buton görünsün
     if len(st.session_state.secili_mahalleler) > 0:
-        if col_right.button("❌ Hiçbirini Seçme", key="btn_mahalle_clear"):
+        if col_right.button("❌ Seçimi Kaldır", key="btn_mahalle_clear"):
             st.session_state.secili_mahalleler = []
 
     secili_mahalleler = st.multiselect(
@@ -153,6 +154,4 @@ else:
         pivot_out = BytesIO()
         pivot_df.to_excel(pivot_out, index=False)
         st.download_button("📊 Pivot Tablo İndir", data=pivot_out.getvalue(), file_name=f"{secili_ilce}_mahalle_nufus_pivot.xlsx")
-
-
 
