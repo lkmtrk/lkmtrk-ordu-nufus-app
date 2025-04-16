@@ -57,11 +57,11 @@ else:
     tum_ilceler = sorted(df_filtered["İLÇE"].unique())
 
     ilce_col1, ilce_col2 = st.columns([1, 1])
-    if ilce_col1.button("✅ Tüm İlçeleri Seç"):
+    if ilce_col1.button("✅ Tümünü Seç", key="btn_ilce_select_all"):
         st.session_state.secili_ilceler = tum_ilceler
         st.session_state.show_clear_ilce = True
     if st.session_state.show_clear_ilce:
-        if ilce_col2.button("❌ Hiçbirini Seçme"):
+        if ilce_col2.button("❌ Hiçbirini Seçme", key="btn_ilce_clear"):
             st.session_state.secili_ilceler = []
             st.session_state.show_clear_ilce = False
 
@@ -104,11 +104,11 @@ else:
     tum_mahalleler = sorted(ilce_df["MAHALLE"].unique())
 
     col_left, col_right = st.columns([1, 1])
-    if col_left.button("✅ Tümünü Seç"):
+    if col_left.button("✅ Tümünü Seç", key="btn_mahalle_select_all"):
         st.session_state.secili_mahalleler = tum_mahalleler
         st.session_state.show_clear = True
     if st.session_state.show_clear:
-        if col_right.button("❌ Hiçbirini Seçme"):
+        if col_right.button("❌ Hiçbirini Seçme", key="btn_mahalle_clear"):
             st.session_state.secili_mahalleler = []
             st.session_state.show_clear = False
 
