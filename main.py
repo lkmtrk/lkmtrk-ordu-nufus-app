@@ -33,7 +33,13 @@ Aşağıdaki grafikler üzerinden verileri karşılaştırabilir ve Excel format
 
 
 
-df = pd.read_excel("nufus_verisi.xlsx", sheet_name="Sayfa1")
+@st.cache_data  # 1.25+ sürümlerde
+def load_data():
+    # Parquet çok daha hızlı okunur ve cache’lenir
+    return pd.read_parquet("nufus_verisi.parquet")
+
+df = load_data()
+
 year_cols = [col for col in df.columns if col.strip().startswith("20") and "YILI NÜFUSU" in col]
 df_long = pd.melt(df, id_vars=["İLÇE", "MAHALLE"], value_vars=year_cols,
                   var_name="YIL", value_name="NÜFUS (KİŞİ SAYISI)")
